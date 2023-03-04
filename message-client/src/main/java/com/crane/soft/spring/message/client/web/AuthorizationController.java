@@ -58,7 +58,7 @@ public class AuthorizationController {
         return "index";
     }
 
-    @GetMapping(value = "//authorize", params = "grant_type=client_credentials")
+    @GetMapping(value = "/authorize", params = "grant_type=client_credentials")
     public String clientCredentialsGrant(Model model) {
         String[] messages = webClient.get()
                 .uri(messagesBaseUri)

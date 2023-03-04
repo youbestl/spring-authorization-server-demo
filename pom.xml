@@ -12,11 +12,12 @@
         <module>auth-server</module>
         <module>message-resource</module>
         <module>message-client</module>
+        <module>test-client</module>
     </modules>
 
     <properties>
         <!--https://github.com/alibaba/spring-cloud-alibaba/wiki/版本说明-->
-        <spring-boot.version>2.7.9</spring-boot.version>
+        <spring-boot.version>2.7.5</spring-boot.version>
         <spring-cloud.version>2021.0.5</spring-cloud.version>
         <spring-cloud-alibaba.version>2021.0.4.0</spring-cloud-alibaba.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -36,6 +37,7 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
         </dependency>
+
     </dependencies>
 
     <dependencyManagement>
@@ -65,13 +67,6 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-web</artifactId>
                 <version>${spring-boot.version}</version>
-                <exclusions>
-                    <!--排除tomcat依赖-->
-                    <exclusion>
-                        <artifactId>spring-boot-starter-tomcat</artifactId>
-                        <groupId>org.springframework.boot</groupId>
-                    </exclusion>
-                </exclusions>
             </dependency>
 
         </dependencies>

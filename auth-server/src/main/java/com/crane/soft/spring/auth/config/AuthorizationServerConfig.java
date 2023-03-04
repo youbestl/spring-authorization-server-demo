@@ -51,14 +51,13 @@ public class AuthorizationServerConfig {
 
         RequestMatcher endpointsMatcher = authorizationServerConfigurer.getEndpointsMatcher();
 
-        http.
-                requestMatcher(endpointsMatcher)
+        http
+                .requestMatcher(endpointsMatcher)
                 .authorizeRequests(authorizeRequests ->
-                        authorizeRequests.anyRequest().authenticated()
-                )
+                        authorizeRequests.anyRequest().authenticated())
                 .csrf(csrf -> csrf.ignoringRequestMatchers(endpointsMatcher))
                 .exceptionHandling(exceptions ->
-                        exceptions.authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login")))
+                        exceptions.authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login"))) //登录界面
                 .oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt)
                 .apply(authorizationServerConfigurer);
         return http.build();
@@ -71,18 +70,34 @@ public class AuthorizationServerConfig {
                 .clientSecret("{noop}secret")
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                .redirectUri("http://127.0.0.1:8080/login/oauth2/code/messaging-client-oidc")
-                .redirectUri("http://127.0.0.1:8080/authorized")
+//                .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+//                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .redirectUri("http://127.0.0.1:8080/login/oauth2/code/messaging-client-authorization-code")
+//                .redirectUri("http://127.0.0.1:8080/login/oauth2/code/messaging-client-oidc")
+//                .redirectUri("http://127.0.0.1:8080/authorized")
                 .scope(OidcScopes.OPENID)
                 .scope(OidcScopes.PROFILE)
                 .scope("message.read")
                 .scope("message.write")
                 .clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build())
                 .build();
-        return new InMemoryRegisteredClientRepository(registeredClient);
+
+        //注册自定义test-client
+        RegisteredClient registeredTestClient = RegisteredClient.withId(UUID.randomUUID().toString())
+                .clientId("test-client")
+                .clientSecret("{noop}123456")
+                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
+                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                .redirectUri("http://127.0.0.1:8081/callback")
+                .scope(OidcScopes.OPENID)
+                .scope("message.read")
+                .scope("message.write")
+                .clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build())
+                .build();
+
+        return new InMemoryRegisteredClientRepository(registeredClient, registeredTestClient);
     }
+
 
     @Bean
     public JWKSource<SecurityContext> jwkSource() {
@@ -93,17 +108,26 @@ public class AuthorizationServerConfig {
 
     @Bean
     public JwtDecoder jwtDecoder(JWKSource<SecurityContext> jwkSource) {
-        return  OAuth2AuthorizationServerConfiguration.jwtDecoder(jwkSource);
+        return OAuth2AuthorizationServerConfiguration.jwtDecoder(jwkSource);
     }
 
+    /**
+     * 自定义授权服务器路径
+     *
+     * @return
+     */
     @Bean
-    public AuthorizationServerSettings authorizationServerSettings(){
-        return AuthorizationServerSettings.builder().build();
+    public AuthorizationServerSettings authorizationServerSettings() {
+        return AuthorizationServerSettings.builder()
+                .authorizationEndpoint("/my/authorize")
+                .issuer("http://localhost:9000")
+                .build();
     }
 
     @Bean
     public OAuth2AuthorizationConsentService authorizationConsentService() {
         return new InMemoryOAuth2AuthorizationConsentService();
     }
+
 
 }

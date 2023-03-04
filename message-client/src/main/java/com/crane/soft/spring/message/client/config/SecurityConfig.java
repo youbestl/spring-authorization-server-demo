@@ -24,8 +24,10 @@ public class SecurityConfig {
                 authorizeRequests(authorizeRequests ->
                         authorizeRequests.anyRequest().authenticated())
                 .oauth2Login(oauth2Login ->
-                        oauth2Login.loginPage("/oauth2/authorization/messaging-client-oidc"))
+//                        oauth2Login.loginPage("/oauth2/authorization/messaging-client-oidc"))
+                        oauth2Login.loginPage("/oauth2/authorization/messaging-client-authorization-code"))
                 .oauth2Client(Customizer.withDefaults());
         return http.build();
     }
+
 }
