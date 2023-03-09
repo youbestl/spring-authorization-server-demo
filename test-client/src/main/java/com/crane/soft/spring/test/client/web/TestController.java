@@ -22,8 +22,8 @@ public class TestController {
     @GetMapping("/index")
     public void getAuthorizationIndex(HttpServletResponse response) throws IOException {
         String url =
-                String.format("http://127.0.0.1:9000/oauth2/authorize?response_type=code&client_id=%s&scope=server&redirect_uri=%s",
-                        "test", "http://127.0.0.1:8081/callback");
+                String.format("http://127.0.0.1:9000/oauth2/authorize?response_type=code&client_id=%s&scope=message.read message.write openid&redirect_uri=%s",
+                        "test-client", "http://127.0.0.1:8081/callback");
         response.sendRedirect(url);
     }
 
