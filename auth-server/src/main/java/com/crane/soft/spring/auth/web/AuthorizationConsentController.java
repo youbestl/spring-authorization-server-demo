@@ -11,6 +11,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.security.Principal;
@@ -25,6 +26,12 @@ public class AuthorizationConsentController {
 
     private final RegisteredClientRepository registeredClientRepository;
     private final OAuth2AuthorizationConsentService authorizationConsentService;
+
+    @GetMapping("/token/login")
+    public String login(Model model, @RequestParam(required = false) String error) {
+        model.addAttribute("error", error);
+        return "login";
+    }
 
     @GetMapping(value = "/oauth2/consent")
     public String consent(Principal principal, Model model,
@@ -54,8 +61,8 @@ public class AuthorizationConsentController {
             }
         }
 
-        model.addAttribute("clientId",clientId);
-        model.addAttribute("state",state);
+        model.addAttribute("clientId", clientId);
+        model.addAttribute("state", state);
         model.addAttribute("scopes", withDescription(scopesToApprove));
         model.addAttribute("previouslyApprovedScopes", withDescription(previouslyApprovedScopes));
         model.addAttribute("principalName", principal.getName());
@@ -74,6 +81,7 @@ public class AuthorizationConsentController {
     public static class ScopeWithDescription {
         private static final String DEFAULT_DESCRIPTION = "UNKNOWN SCOPE - We cannot provide information about this permission, use caution when granting this.";
         private static final Map<String, String> scopeDescriptions = new HashMap<>();
+
         static {
             scopeDescriptions.put(
                     OidcScopes.PROFILE,
