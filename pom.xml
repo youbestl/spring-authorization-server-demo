@@ -13,6 +13,7 @@
         <module>message-resource</module>
         <module>message-client</module>
         <module>test-client</module>
+        <module>custom-resource</module>
     </modules>
 
     <properties>

@@ -1,0 +1,12 @@
+server:
+  port: 8090
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        opaque-token:
+          #          introspection-uri: http://localhost:9000/oauth2/introspect
+          introspection-uri: http://localhost:9000/token/check_token
+          client-id: test
+          client-secret: test
