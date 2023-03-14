@@ -10,3 +10,5 @@ spring:
           introspection-uri: http://localhost:9000/token/check_token
           client-id: test
           client-secret: test
+  redis:
+    host: 192.168.86.10
