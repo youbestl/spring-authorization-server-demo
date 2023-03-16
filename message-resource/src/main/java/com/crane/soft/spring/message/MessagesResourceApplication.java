@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 /**
  * @author DL
  */
+
 @SpringBootApplication
 public class MessagesResourceApplication {
     public static void main(String[] args) {
