@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.crane.soft.spring</groupId>
         <artifactId>spring-authorization-server-demo</artifactId>
-        <version>1.0-SNAPSHOT</version>
+        <version>1.2.2-SNAPSHOT</version>
     </parent>
 
     <artifactId>auth-server</artifactId>
@@ -18,16 +18,11 @@
        </dependency>
        <dependency>
            <groupId>org.springframework.boot</groupId>
-           <artifactId>spring-boot-starter-thymeleaf</artifactId>
-       </dependency>
-       <dependency>
-           <groupId>org.springframework.boot</groupId>
            <artifactId>spring-boot-starter-security</artifactId>
        </dependency>
        <dependency>
            <groupId>org.springframework.security</groupId>
            <artifactId>spring-security-oauth2-authorization-server</artifactId>
-           <version>0.4.1</version>
        </dependency>
        <dependency>
            <groupId>org.springframework.boot</groupId>

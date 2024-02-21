@@ -1,4 +1,4 @@
-package com.crane.soft.spring.auth;
+package com.dm.auth.server;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -7,10 +7,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @author DL
  */
 @SpringBootApplication
-public class CustomConsentAuthorizationServerApplication {
-
+public class OAuth2ServerApplication {
     public static void main(String[] args) {
-        SpringApplication.run(CustomConsentAuthorizationServerApplication.class, args);
+        SpringApplication.run(OAuth2ServerApplication.class, args);
     }
-
 }
