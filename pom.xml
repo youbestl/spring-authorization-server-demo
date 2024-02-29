@@ -10,6 +10,8 @@
     <packaging>pom</packaging>
     <modules>
         <module>auth-server</module>
+        <module>messages-resource</module>
+        <module>demo-client</module>
     </modules>
 
     <properties>
