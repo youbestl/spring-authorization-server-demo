@@ -46,7 +46,7 @@ public class DefaultSecurityConfig {
 		http
 			.authorizeHttpRequests(authorize ->
 				authorize
-					.requestMatchers("/assets/**", "/login").permitAll()
+					.requestMatchers("/assets/**", "/login").permitAll() // 不需要认证的URL
 					.anyRequest().authenticated()
 			)
 			.formLogin(formLogin ->
@@ -56,7 +56,7 @@ public class DefaultSecurityConfig {
 			.oauth2Login(oauth2Login ->
 				oauth2Login
 					.loginPage("/login")
-					.successHandler(authenticationSuccessHandler())
+					.successHandler(authenticationSuccessHandler()) // 登录成功处理 Handler
 			);
 
 		return http.build();
@@ -67,6 +67,11 @@ public class DefaultSecurityConfig {
         return new FederatedIdentityAuthenticationSuccessHandler();
     }
 
+	/**
+	 * 注册默认登录用户信息
+	 *
+	 * @return
+	 */
     // @formatter:off
 	@Bean
 	public UserDetailsService users() {

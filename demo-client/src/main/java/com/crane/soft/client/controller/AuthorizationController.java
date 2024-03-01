@@ -52,6 +52,7 @@ public class AuthorizationController {
                                          @RegisteredOAuth2AuthorizedClient("messaging-client-authorization-code")
                                          OAuth2AuthorizedClient authorizedClient) {
 
+        // 向 http://127.0.0.1:8090/messages 发送请求
         String[] messages = this.webClient
                 .get()
                 .uri(this.messagesBaseUri)

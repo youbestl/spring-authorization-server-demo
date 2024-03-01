@@ -52,6 +52,7 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import java.util.UUID;
 
@@ -71,24 +72,24 @@ public class AuthorizationServerConfig {
             HttpSecurity http, RegisteredClientRepository registeredClientRepository,
             AuthorizationServerSettings authorizationServerSettings) throws Exception {
 
-        OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
+		//为OAuth 2.0授权服务器设置默认的安全配置
+		//OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
+		OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
+				new OAuth2AuthorizationServerConfigurer();
+		RequestMatcher endpointsMatcher = authorizationServerConfigurer
+				.getEndpointsMatcher();
 
-        /*
-         * This sample demonstrates the use of a public client that does not
-         * store credentials or authenticate with the authorization server.
-         *
-         * The following components show how to customize the authorization
-         * server to allow for device clients to perform requests to the
-         * OAuth 2.0 Device Authorization Endpoint and Token Endpoint without
-         * a clientId/clientSecret.
-         *
-         * CAUTION: These endpoints will not require any authentication, and can
-         * be accessed by any client that has a valid clientId.
-         *
-         * It is therefore RECOMMENDED to carefully monitor the use of these
-         * endpoints and employ any additional protections as needed, which is
-         * outside the scope of this sample.
-         */
+		http
+				.securityMatcher(endpointsMatcher)
+				.authorizeHttpRequests(authorize ->
+						authorize
+								.requestMatchers("/oauth2/token").permitAll()
+								.anyRequest().authenticated()
+				)
+				.csrf(csrf -> csrf.ignoringRequestMatchers(endpointsMatcher))
+				.apply(authorizationServerConfigurer);
+
+		// 设备授权码模式相关
         DeviceClientAuthenticationConverter deviceClientAuthenticationConverter =
                 new DeviceClientAuthenticationConverter(
                         authorizationServerSettings.getDeviceAuthorizationEndpoint());
@@ -117,34 +118,42 @@ public class AuthorizationServerConfig {
 		http
 			.exceptionHandling((exceptions) -> exceptions
 				.defaultAuthenticationEntryPointFor(
-					new LoginUrlAuthenticationEntryPoint("/login"),
+					new LoginUrlAuthenticationEntryPoint("/login"), // 登录表单提交地址
 					new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
 				)
 			)
 			.oauth2ResourceServer(oauth2ResourceServer ->
-				oauth2ResourceServer.jwt(Customizer.withDefaults()));
+				oauth2ResourceServer.jwt(Customizer.withDefaults())); // 使用jwt处理toke
 		// @formatter:on
         return http.build();
     }
 
     // @formatter:off
+
+	/**
+	 * 注册客户端信息
+	 *
+	 * @param jdbcTemplate
+	 * @return
+	 */
 	@Bean
 	public JdbcRegisteredClientRepository registeredClientRepository(JdbcTemplate jdbcTemplate) {
 		RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
-				.clientId("messaging-client")
-				.clientSecret("{noop}secret")
-				.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-				.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-				.authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-				.authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-				.redirectUri("http://127.0.0.1:8081/login/oauth2/code/messaging-client-oidc")
-				.redirectUri("http://127.0.0.1:8081/authorized")
-				.postLogoutRedirectUri("http://127.0.0.1:8081/logged-out")
-				.scope(OidcScopes.OPENID)
-				.scope(OidcScopes.PROFILE)
+				.clientId("messaging-client") // client_id
+				.clientSecret("{noop}secret") // client_secret {noop} 表示明文传输
+				.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC) //客户端身份验证方法
+				.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE) //授权码模式
+				.authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN) // 刷新令牌
+				.authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS) // 客户端模式
+				//.redirectUri("http://127.0.0.1:8081/login/oauth2/code/messaging-client-oidc") //回调地址
+				//.redirectUri("http://127.0.0.1:8081/authorized") // 回调地址
+				.redirectUri("https://www.baidu.com/") // 这里修改为百度方便查看授权码code
+				.postLogoutRedirectUri("http://127.0.0.1:8081/logged-out") // 退出登录回调地址
+				.scope(OidcScopes.OPENID) // 授权范围 openid
+				.scope(OidcScopes.PROFILE) // profile
 				.scope("message.read")
 				.scope("message.write")
-				.clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build())
+				.clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build()) // 客户端设置
 				.build();
 
 		RegisteredClient deviceClient = RegisteredClient.withId(UUID.randomUUID().toString())
@@ -158,8 +167,8 @@ public class AuthorizationServerConfig {
 
 		// Save registered client's in db as if in-memory
 		JdbcRegisteredClientRepository registeredClientRepository = new JdbcRegisteredClientRepository(jdbcTemplate);
-		registeredClientRepository.save(registeredClient);
-		registeredClientRepository.save(deviceClient);
+		registeredClientRepository.save(registeredClient); // 普通客户端
+		registeredClientRepository.save(deviceClient); // 设备客户端
 
 		return registeredClientRepository;
 	}
@@ -178,6 +187,11 @@ public class AuthorizationServerConfig {
         return new JdbcOAuth2AuthorizationConsentService(jdbcTemplate, registeredClientRepository);
     }
 
+	/**
+	 * 自定义生成token的规则
+	 *
+	 * @return
+	 */
     @Bean
     public OAuth2TokenCustomizer<JwtEncodingContext> idTokenCustomizer() {
         return new FederatedIdentityIdTokenCustomizer();
@@ -200,7 +214,12 @@ public class AuthorizationServerConfig {
         return AuthorizationServerSettings.builder().build();
     }
 
-    @Bean
+	/**
+	 * 默认使用H2数据库进行存储
+	 *
+	 * @return
+	 */
+	//@Bean
     public EmbeddedDatabase embeddedDatabase() {
         // @formatter:off
 		return new EmbeddedDatabaseBuilder()

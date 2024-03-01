@@ -66,6 +66,17 @@
            <artifactId>htmlunit</artifactId>
            <scope>test</scope>
        </dependency>
+
+       <dependency>
+           <groupId>com.mysql</groupId>
+           <artifactId>mysql-connector-j</artifactId>
+       </dependency>
+
+       <dependency>
+           <groupId>org.springframework.security</groupId>
+           <artifactId>spring-security-cas</artifactId>
+       </dependency>
+
    </dependencies>
 
     <build>
