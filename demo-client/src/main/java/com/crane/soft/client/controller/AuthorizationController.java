@@ -15,10 +15,12 @@
  */
 package com.crane.soft.client.controller;
 
+import cn.hutool.json.JSONUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.web.reactive.function.client.ServerOAuth2AuthorizedClientExchangeFilterFunction;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.stereotype.Controller;
@@ -26,6 +28,8 @@ import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.reactive.function.client.ClientRequest;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
@@ -56,11 +60,19 @@ public class AuthorizationController {
         String[] messages = this.webClient
                 .get()
                 .uri(this.messagesBaseUri)
+                /**
+                 * 加令牌信息添加到 Header 中，Authorization:Bearer <access_token>
+                 *
+                 * {@link ServerOAuth2AuthorizedClientExchangeFilterFunction#bearer(ClientRequest, OAuth2AuthorizedClient)}
+                 *
+                 * {@link ServletOAuth2AuthorizedClientExchangeFilterFunction#defaultRequest()}
+                 */
                 .attributes(oauth2AuthorizedClient(authorizedClient))
                 .retrieve()
                 .bodyToMono(String[].class)
                 .block();
         model.addAttribute("messages", messages);
+
 
         return "index";
     }

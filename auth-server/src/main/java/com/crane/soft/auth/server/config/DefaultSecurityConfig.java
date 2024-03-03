@@ -19,6 +19,7 @@ package com.crane.soft.auth.server.config;
 import com.crane.soft.auth.server.federation.FederatedIdentityAuthenticationSuccessHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.session.SessionRegistry;
@@ -38,6 +39,7 @@ import org.springframework.security.web.session.HttpSessionEventPublisher;
  */
 @EnableWebSecurity
 @Configuration(proxyBeanMethods = false)
+@Order(1)
 public class DefaultSecurityConfig {
 
     // @formatter:off

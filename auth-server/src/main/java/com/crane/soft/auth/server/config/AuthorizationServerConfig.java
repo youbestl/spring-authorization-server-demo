@@ -17,6 +17,7 @@ package com.crane.soft.auth.server.config;
 
 import com.crane.soft.auth.server.authentication.DeviceClientAuthenticationProvider;
 import com.crane.soft.auth.server.controller.authentication.DeviceClientAuthenticationConverter;
+import com.crane.soft.auth.server.federation.FederatedIdentityAuthenticationSuccessHandler;
 import com.crane.soft.auth.server.federation.FederatedIdentityIdTokenCustomizer;
 import com.crane.soft.auth.server.jose.Jwks;
 import com.nimbusds.jose.jwk.JWKSet;
@@ -50,6 +51,7 @@ import org.springframework.security.oauth2.server.authorization.settings.ClientS
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
@@ -67,29 +69,14 @@ public class AuthorizationServerConfig {
     private static final String CUSTOM_CONSENT_PAGE_URI = "/oauth2/consent";
 
     @Bean
-    @Order(Ordered.HIGHEST_PRECEDENCE)
+    @Order(2)
     public SecurityFilterChain authorizationServerSecurityFilterChain(
             HttpSecurity http, RegisteredClientRepository registeredClientRepository,
             AuthorizationServerSettings authorizationServerSettings) throws Exception {
+        //为OAuth 2.0授权服务器设置默认的安全配置
+        OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
 
-		//为OAuth 2.0授权服务器设置默认的安全配置
-		//OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
-		OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
-				new OAuth2AuthorizationServerConfigurer();
-		RequestMatcher endpointsMatcher = authorizationServerConfigurer
-				.getEndpointsMatcher();
-
-		http
-				.securityMatcher(endpointsMatcher)
-				.authorizeHttpRequests(authorize ->
-						authorize
-								.requestMatchers("/oauth2/token").permitAll()
-								.anyRequest().authenticated()
-				)
-				.csrf(csrf -> csrf.ignoringRequestMatchers(endpointsMatcher))
-				.apply(authorizationServerConfigurer);
-
-		// 设备授权码模式相关
+        // 设备授权码模式相关
         DeviceClientAuthenticationConverter deviceClientAuthenticationConverter =
                 new DeviceClientAuthenticationConverter(
                         authorizationServerSettings.getDeviceAuthorizationEndpoint());
@@ -131,7 +118,7 @@ public class AuthorizationServerConfig {
     // @formatter:off
 
 	/**
-	 * 注册客户端信息
+	 *
 	 *
 	 * @param jdbcTemplate
 	 * @return
@@ -145,9 +132,9 @@ public class AuthorizationServerConfig {
 				.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE) //授权码模式
 				.authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN) // 刷新令牌
 				.authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS) // 客户端模式
-				//.redirectUri("http://127.0.0.1:8081/login/oauth2/code/messaging-client-oidc") //回调地址
-				//.redirectUri("http://127.0.0.1:8081/authorized") // 回调地址
-				.redirectUri("https://www.baidu.com/") // 这里修改为百度方便查看授权码code
+				.redirectUri("http://127.0.0.1:8081/login/oauth2/code/messaging-client-oidc") //回调地址
+				.redirectUri("http://127.0.0.1:8081/authorized") // 回调地址
+				//.redirectUri("https://www.baidu.com/") // 这里修改为百度方便查看授权码code
 				.postLogoutRedirectUri("http://127.0.0.1:8081/logged-out") // 退出登录回调地址
 				.scope(OidcScopes.OPENID) // 授权范围 openid
 				.scope(OidcScopes.PROFILE) // profile
@@ -167,19 +154,35 @@ public class AuthorizationServerConfig {
 
 		// Save registered client's in db as if in-memory
 		JdbcRegisteredClientRepository registeredClientRepository = new JdbcRegisteredClientRepository(jdbcTemplate);
-		registeredClientRepository.save(registeredClient); // 普通客户端
-		registeredClientRepository.save(deviceClient); // 设备客户端
+
+        // 注册客户端信息 如果Mysql 数据库模式则只需运行一次即可，不然会报冲突的错
+        // registeredClientRepository.save(registeredClient); // 普通客户端
+        // registeredClientRepository.save(deviceClient); // 设备客户端
 
 		return registeredClientRepository;
 	}
 	// @formatter:on
 
+    /**
+     * 对应 oauth2_authorization 表
+     *
+     * @param jdbcTemplate
+     * @param registeredClientRepository
+     * @return
+     */
     @Bean
     public JdbcOAuth2AuthorizationService authorizationService(JdbcTemplate jdbcTemplate,
                                                                RegisteredClientRepository registeredClientRepository) {
         return new JdbcOAuth2AuthorizationService(jdbcTemplate, registeredClientRepository);
     }
 
+    /**
+     * 对应 oauth2_authorization_consent 表
+     *
+     * @param jdbcTemplate
+     * @param registeredClientRepository
+     * @return
+     */
     @Bean
     public JdbcOAuth2AuthorizationConsentService authorizationConsentService(JdbcTemplate jdbcTemplate,
                                                                              RegisteredClientRepository registeredClientRepository) {
@@ -187,11 +190,11 @@ public class AuthorizationServerConfig {
         return new JdbcOAuth2AuthorizationConsentService(jdbcTemplate, registeredClientRepository);
     }
 
-	/**
-	 * 自定义生成token的规则
-	 *
-	 * @return
-	 */
+    /**
+     * 自定义生成token的规则
+     *
+     * @return
+     */
     @Bean
     public OAuth2TokenCustomizer<JwtEncodingContext> idTokenCustomizer() {
         return new FederatedIdentityIdTokenCustomizer();
@@ -214,12 +217,16 @@ public class AuthorizationServerConfig {
         return AuthorizationServerSettings.builder().build();
     }
 
-	/**
-	 * 默认使用H2数据库进行存储
-	 *
-	 * @return
-	 */
-	//@Bean
+    private AuthenticationSuccessHandler authenticationSuccessHandler() {
+        return new FederatedIdentityAuthenticationSuccessHandler();
+    }
+
+    /**
+     * 默认使用内嵌H2数据库进行存储
+     *
+     * @return
+     */
+    //@Bean
     public EmbeddedDatabase embeddedDatabase() {
         // @formatter:off
 		return new EmbeddedDatabaseBuilder()
