@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.web.reactive.function.client.ServerOAuth2AuthorizedClientExchangeFilterFunction;
+import org.springframework.security.oauth2.client.web.reactive.function.client.ServletOAuth2AuthorizedClientExchangeFilterFunction;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.stereotype.Controller;
@@ -28,7 +29,6 @@ import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.reactive.function.client.ClientRequest;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -56,7 +56,11 @@ public class AuthorizationController {
                                          @RegisteredOAuth2AuthorizedClient("messaging-client-authorization-code")
                                          OAuth2AuthorizedClient authorizedClient) {
 
-        // 向 http://127.0.0.1:8090/messages 发送请求
+        System.out.println(JSONUtil.toJsonStr(authorizedClient.getPrincipalName())); // 用户名
+        System.out.println(JSONUtil.toJsonStr(authorizedClient.getAccessToken())); // 访问令牌
+        System.out.println(JSONUtil.toJsonStr(authorizedClient.getRefreshToken())); // 刷新令牌
+
+        // 向 http://127.0.0.1:8090/messages 发送请求获取被保护的资源
         String[] messages = this.webClient
                 .get()
                 .uri(this.messagesBaseUri)

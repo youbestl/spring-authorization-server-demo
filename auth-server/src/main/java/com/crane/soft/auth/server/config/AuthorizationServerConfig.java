@@ -20,10 +20,12 @@ import com.crane.soft.auth.server.controller.authentication.DeviceClientAuthenti
 import com.crane.soft.auth.server.federation.FederatedIdentityAuthenticationSuccessHandler;
 import com.crane.soft.auth.server.federation.FederatedIdentityIdTokenCustomizer;
 import com.crane.soft.auth.server.jose.Jwks;
+import com.crane.soft.auth.server.support.DmRedisOAuth2AuthorizationService;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -39,7 +41,6 @@ import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.authorization.JdbcOAuth2AuthorizationConsentService;
-import org.springframework.security.oauth2.server.authorization.JdbcOAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
@@ -65,6 +66,9 @@ import java.util.UUID;
 @Configuration(proxyBeanMethods = false)
 public class AuthorizationServerConfig {
     private static final String CUSTOM_CONSENT_PAGE_URI = "/oauth2/consent";
+
+	@Autowired
+	private DmRedisOAuth2AuthorizationService oAuth2AuthorizationService;
 
     @Bean
     @Order(2)
@@ -168,11 +172,11 @@ public class AuthorizationServerConfig {
      * @param registeredClientRepository
      * @return
      */
-    @Bean
+    /*@Bean
     public JdbcOAuth2AuthorizationService authorizationService(JdbcTemplate jdbcTemplate,
                                                                RegisteredClientRepository registeredClientRepository) {
         return new JdbcOAuth2AuthorizationService(jdbcTemplate, registeredClientRepository);
-    }
+    }*/
 
     /**
      * 对应 oauth2_authorization_consent 表
