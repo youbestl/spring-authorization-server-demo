@@ -16,16 +16,19 @@
 package com.crane.soft.auth.server.config;
 
 import com.crane.soft.auth.server.authentication.DeviceClientAuthenticationProvider;
+import com.crane.soft.auth.server.constants.OAuth2Constants;
 import com.crane.soft.auth.server.controller.authentication.DeviceClientAuthenticationConverter;
 import com.crane.soft.auth.server.federation.FederatedIdentityAuthenticationSuccessHandler;
 import com.crane.soft.auth.server.federation.FederatedIdentityIdTokenCustomizer;
 import com.crane.soft.auth.server.jose.Jwks;
-import com.crane.soft.auth.server.support.DmRedisOAuth2AuthorizationService;
+import com.crane.soft.auth.server.support.password.PasswordGrantAuthenticationConvert;
+import com.crane.soft.auth.server.support.password.PasswordGrantAuthenticationProvider;
+import com.crane.soft.auth.server.support.sms.SmsGrantAuthenticationConvert;
+import com.crane.soft.auth.server.support.sms.SmsGrantAuthenticationProvider;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -36,11 +39,15 @@ import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.authorization.JdbcOAuth2AuthorizationConsentService;
+import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
@@ -48,12 +55,12 @@ import org.springframework.security.oauth2.server.authorization.config.annotatio
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
-import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
-import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
+import org.springframework.security.oauth2.server.authorization.token.*;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import java.util.UUID;
 
@@ -63,20 +70,32 @@ import java.util.UUID;
  * @author Steve Riesenberg
  * @since 1.1
  */
-@Configuration(proxyBeanMethods = false)
+@Configuration
 public class AuthorizationServerConfig {
     private static final String CUSTOM_CONSENT_PAGE_URI = "/oauth2/consent";
-
-	@Autowired
-	private DmRedisOAuth2AuthorizationService oAuth2AuthorizationService;
 
     @Bean
     @Order(2)
     public SecurityFilterChain authorizationServerSecurityFilterChain(
             HttpSecurity http, RegisteredClientRepository registeredClientRepository,
-            AuthorizationServerSettings authorizationServerSettings) throws Exception {
+			AuthorizationServerSettings authorizationServerSettings,
+			OAuth2AuthorizationService authorizationService,
+			OAuth2TokenGenerator<?> tokenGenerator) throws Exception {
         //为OAuth 2.0授权服务器设置默认的安全配置
-        OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
+		//OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
+
+		OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
+				new OAuth2AuthorizationServerConfigurer();
+		RequestMatcher endpointsMatcher = authorizationServerConfigurer
+				.getEndpointsMatcher();
+		http
+				.securityMatcher(endpointsMatcher)
+				.authorizeHttpRequests(authorize ->
+						authorize.requestMatchers("/oauth2/token", "/error").permitAll()
+								.anyRequest().authenticated()
+				)
+				.csrf(csrf -> csrf.ignoringRequestMatchers(endpointsMatcher))
+				.apply(authorizationServerConfigurer);
 
         // 设备授权码模式相关
         DeviceClientAuthenticationConverter deviceClientAuthenticationConverter =
@@ -97,9 +116,20 @@ public class AuthorizationServerConfig {
 				clientAuthentication
 					.authenticationConverter(deviceClientAuthenticationConverter)
 					.authenticationProvider(deviceClientAuthenticationProvider)
-			)
+			)// 自定义密码模式
 			.authorizationEndpoint(authorizationEndpoint ->
 				authorizationEndpoint.consentPage(CUSTOM_CONSENT_PAGE_URI))
+				.tokenEndpoint(tokenEndpoint ->
+						tokenEndpoint.accessTokenRequestConverter(
+								new PasswordGrantAuthenticationConvert())
+								.authenticationProvider(
+										new PasswordGrantAuthenticationProvider(authorizationService, tokenGenerator)))
+				//短信验证码模式登录
+				.tokenEndpoint(tokenEndpoint ->
+						tokenEndpoint.accessTokenRequestConverter(
+										new SmsGrantAuthenticationConvert())
+								.authenticationProvider(
+										new SmsGrantAuthenticationProvider(authorizationService, tokenGenerator)))
 			.oidc(Customizer.withDefaults());	// Enable OpenID Connect 1.0
 		// @formatter:on
 
@@ -116,20 +146,18 @@ public class AuthorizationServerConfig {
 		// @formatter:on
         return http.build();
     }
-
     // @formatter:off
 
 	/**
-	 *
-	 *
-	 * @param jdbcTemplate
-	 * @return
-	 */
+     * @param jdbcTemplate
+     * @return
+     */
 	@Bean
 	public JdbcRegisteredClientRepository registeredClientRepository(JdbcTemplate jdbcTemplate) {
+
 		RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
 				.clientId("messaging-client") // client_id
-				.clientSecret("{noop}secret") // client_secret {noop} 表示明文传输
+				.clientSecret("$2a$10$XHMdPVX.NMPlNwkMu31tKurBms6SrhUegjxW1h8iCWFmhxMatvs4q") // client_secret {noop} secret表示明文传输
 				.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC) //客户端身份验证方法
 				.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE) //授权码模式
 				.authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN) // 刷新令牌
@@ -154,12 +182,56 @@ public class AuthorizationServerConfig {
 				.scope("message.write")
 				.build();
 
+		//密码模式
+		RegisteredClient registeredPasswordClient = RegisteredClient.withId(UUID.randomUUID().toString())
+				.clientId("messaging-password-client") // client_id
+				.clientSecret("$2a$10$XHMdPVX.NMPlNwkMu31tKurBms6SrhUegjxW1h8iCWFmhxMatvs4q") // client_secret {noop} secret表示明文传输
+				.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC) //客户端身份验证方法
+				.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE) //授权码模式
+				.authorizationGrantType(AuthorizationGrantType.PASSWORD) //自定义密码模式
+				.authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN) // 刷新令牌
+				.authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS) // 客户端模式
+				.redirectUri("http://127.0.0.1:8081/login/oauth2/code/messaging-client-oidc") //回调地址
+				.redirectUri("http://127.0.0.1:8081/authorized") // 回调地址
+				//.redirectUri("https://www.baidu.com/") // 这里修改为百度方便查看授权码code
+				.postLogoutRedirectUri("http://127.0.0.1:8081/logged-out") // 退出登录回调地址
+				.scope(OidcScopes.OPENID) // 授权范围 openid
+				.scope(OidcScopes.PROFILE) // profile
+				.scope("message.read")
+				.scope("message.write")
+				.clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build()) // 客户端设置
+				.build();
+
+
+		RegisteredClient registeredSmsClient = RegisteredClient.withId(UUID.randomUUID().toString())
+				.clientId("messaging-sms-client") // client_id
+				.clientSecret("$2a$10$XHMdPVX.NMPlNwkMu31tKurBms6SrhUegjxW1h8iCWFmhxMatvs4q") // client_secret {noop} secret表示明文传输
+				.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC) //客户端身份验证方法
+				.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE) //授权码模式
+				.authorizationGrantType(AuthorizationGrantType.PASSWORD) //自定义密码模式
+				.authorizationGrantType(new AuthorizationGrantType(OAuth2Constants.GRANT_TYPE_MOBILE)) //短信验证码登录
+				.authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN) // 刷新令牌
+				.authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS) // 客户端模式
+				.redirectUri("http://127.0.0.1:8081/login/oauth2/code/messaging-client-oidc") //回调地址
+				.redirectUri("http://127.0.0.1:8081/authorized") // 回调地址
+				//.redirectUri("https://www.baidu.com/") // 这里修改为百度方便查看授权码code
+				.postLogoutRedirectUri("http://127.0.0.1:8081/logged-out") // 退出登录回调地址
+				.scope(OidcScopes.OPENID) // 授权范围 openid
+				.scope(OidcScopes.PROFILE) // profile
+				.scope("message.read")
+				.scope("message.write")
+				.clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build()) // 客户端设置
+				.build();
+
+
 		// Save registered client's in db as if in-memory
 		JdbcRegisteredClientRepository registeredClientRepository = new JdbcRegisteredClientRepository(jdbcTemplate);
 
         // 注册客户端信息 如果Mysql 数据库模式则只需运行一次即可，不然会报冲突的错
-        // registeredClientRepository.save(registeredClient); // 普通客户端
+		// registeredClientRepository.save(registeredClient); // 普通客户端
         // registeredClientRepository.save(deviceClient); // 设备客户端
+		// registeredClientRepository.save(registeredPasswordClient); // 密码模式客户端
+		registeredClientRepository.save(registeredSmsClient); // 短信验证码登录
 
 		return registeredClientRepository;
 	}
@@ -192,8 +264,17 @@ public class AuthorizationServerConfig {
         return new JdbcOAuth2AuthorizationConsentService(jdbcTemplate, registeredClientRepository);
     }
 
+
+	@Bean
+	public OAuth2TokenGenerator<?> tokenGenerator(JWKSource<SecurityContext> jwkSource) {
+		JwtGenerator jwtGenerator = new JwtGenerator(new NimbusJwtEncoder(jwkSource));
+		OAuth2AccessTokenGenerator accessTokenGenerator = new OAuth2AccessTokenGenerator();
+		OAuth2RefreshTokenGenerator refreshTokenGenerator = new OAuth2RefreshTokenGenerator();
+		return new DelegatingOAuth2TokenGenerator(jwtGenerator, accessTokenGenerator, refreshTokenGenerator);
+	}
+
     /**
-     * 自定义生成token的规则
+	 * 自定义生成id_token的规则
      *
      * @return
      */
@@ -222,6 +303,12 @@ public class AuthorizationServerConfig {
     private AuthenticationSuccessHandler authenticationSuccessHandler() {
         return new FederatedIdentityAuthenticationSuccessHandler();
     }
+
+
+	@Bean
+	public PasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
+	}
 
     /**
      * 默认使用内嵌H2数据库进行存储

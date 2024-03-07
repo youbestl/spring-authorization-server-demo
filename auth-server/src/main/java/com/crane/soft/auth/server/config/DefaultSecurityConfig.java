@@ -17,6 +17,7 @@ package com.crane.soft.auth.server.config;
 
 
 import com.crane.soft.auth.server.federation.FederatedIdentityAuthenticationSuccessHandler;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -27,6 +28,7 @@ import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -41,6 +43,9 @@ import org.springframework.security.web.session.HttpSessionEventPublisher;
 @Configuration(proxyBeanMethods = false)
 @Order(1)
 public class DefaultSecurityConfig {
+
+	@Autowired
+	private PasswordEncoder bCryptPasswordEncoder;
 
     // @formatter:off
 	@Bean
@@ -77,12 +82,18 @@ public class DefaultSecurityConfig {
     // @formatter:off
 	@Bean
 	public UserDetailsService users() {
-		UserDetails user = User.withDefaultPasswordEncoder()
+		UserDetails user = User.builder()
 				.username("user")
-				.password("123456")
+				.password(bCryptPasswordEncoder.encode("123456"))
 				.roles("USER")
 				.build();
-		return new InMemoryUserDetailsManager(user);
+		//短信验证码登录用户
+		UserDetails smsUser = User.builder()
+				.username("13800000000")
+				.password(bCryptPasswordEncoder.encode("123456"))
+				.roles("USER")
+				.build();
+		return new InMemoryUserDetailsManager(user,smsUser);
 	}
 	// @formatter:on
 
