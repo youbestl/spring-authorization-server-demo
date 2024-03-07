@@ -231,7 +231,7 @@ public class AuthorizationServerConfig {
 		// registeredClientRepository.save(registeredClient); // 普通客户端
         // registeredClientRepository.save(deviceClient); // 设备客户端
 		// registeredClientRepository.save(registeredPasswordClient); // 密码模式客户端
-		registeredClientRepository.save(registeredSmsClient); // 短信验证码登录
+		// registeredClientRepository.save(registeredSmsClient); // 短信验证码登录
 
 		return registeredClientRepository;
 	}
