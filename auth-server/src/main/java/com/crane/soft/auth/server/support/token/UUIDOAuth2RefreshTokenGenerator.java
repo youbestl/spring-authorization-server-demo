@@ -1,6 +1,5 @@
 package com.crane.soft.auth.server.support.token;
 
-import com.crane.soft.auth.server.support.CustomRefreshToken;
 import org.springframework.lang.Nullable;
 import org.springframework.security.crypto.keygen.StringKeyGenerator;
 import org.springframework.security.oauth2.core.OAuth2RefreshToken;

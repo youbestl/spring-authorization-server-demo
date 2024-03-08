@@ -1,4 +1,4 @@
-package com.crane.soft.auth.server.support;
+package com.crane.soft.auth.server.support.util;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.experimental.UtilityClass;

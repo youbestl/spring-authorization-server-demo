@@ -2,7 +2,7 @@ package com.crane.soft.auth.server.support.password;
 
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.map.MapUtil;
-import com.crane.soft.auth.server.support.OAuth2Utils;
+import com.crane.soft.auth.server.support.util.OAuth2Utils;
 import jakarta.annotation.Resource;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;

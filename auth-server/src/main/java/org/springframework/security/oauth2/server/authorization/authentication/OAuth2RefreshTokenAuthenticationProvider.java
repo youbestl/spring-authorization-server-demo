@@ -15,7 +15,7 @@
  */
 package org.springframework.security.oauth2.server.authorization.authentication;
 
-import com.crane.soft.auth.server.support.CustomRefreshToken;
+import com.crane.soft.auth.server.support.token.CustomRefreshToken;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.security.authentication.AuthenticationProvider;

@@ -2,7 +2,7 @@ package com.crane.soft.auth.server.support.sms;
 
 import cn.hutool.core.util.StrUtil;
 import com.crane.soft.auth.server.constants.OAuth2Constants;
-import com.crane.soft.auth.server.support.OAuth2Utils;
+import com.crane.soft.auth.server.support.util.OAuth2Utils;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;

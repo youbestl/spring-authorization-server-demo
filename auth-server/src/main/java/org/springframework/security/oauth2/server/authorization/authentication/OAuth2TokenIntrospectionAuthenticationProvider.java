@@ -15,7 +15,7 @@
  */
 package org.springframework.security.oauth2.server.authorization.authentication;
 
-import com.crane.soft.auth.server.support.OAuth2Utils;
+import com.crane.soft.auth.server.support.util.OAuth2Utils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.core.convert.TypeDescriptor;

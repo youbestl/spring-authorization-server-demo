@@ -1,4 +1,4 @@
-package com.crane.soft.auth.server.support;
+package com.crane.soft.auth.server.support.token;
 
 import org.springframework.security.oauth2.core.OAuth2RefreshToken;
 

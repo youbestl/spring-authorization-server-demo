@@ -1,6 +1,7 @@
-package com.crane.soft.auth.server.support;
+package com.crane.soft.auth.server.support.service;
 
 import cn.hutool.core.lang.Assert;
+import com.crane.soft.auth.server.support.token.CustomRefreshToken;
 import jakarta.annotation.Resource;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
