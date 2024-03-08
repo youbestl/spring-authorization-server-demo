@@ -25,6 +25,7 @@ import com.crane.soft.auth.server.support.password.PasswordGrantAuthenticationCo
 import com.crane.soft.auth.server.support.password.PasswordGrantAuthenticationProvider;
 import com.crane.soft.auth.server.support.sms.SmsGrantAuthenticationConvert;
 import com.crane.soft.auth.server.support.sms.SmsGrantAuthenticationProvider;
+import com.crane.soft.auth.server.support.token.CustomOAuth2TokenCustomizer;
 import com.crane.soft.auth.server.support.token.UUIDOAuth2AccessTokenGenerator;
 import com.crane.soft.auth.server.support.token.UUIDOAuth2RefreshTokenGenerator;
 import com.nimbusds.jose.jwk.JWKSet;
@@ -97,7 +98,8 @@ public class AuthorizationServerConfig {
 		http
 				.securityMatcher(endpointsMatcher)
 				.authorizeHttpRequests(authorize ->
-						authorize.requestMatchers("/oauth2/token", "/error", "/oauth2/introspect").permitAll()
+						authorize.requestMatchers("/oauth2/token", "/error",
+										"/oauth2/introspect").permitAll()
 								.anyRequest().authenticated()
 				)
 				.csrf(csrf -> csrf.ignoringRequestMatchers(endpointsMatcher))
@@ -300,15 +302,17 @@ public class AuthorizationServerConfig {
 	@Bean
 	public OAuth2TokenGenerator<?> tokenGenerator() {
 		UUIDOAuth2AccessTokenGenerator uuidoAuth2AccessTokenGenerator = new UUIDOAuth2AccessTokenGenerator();
+		// 注入Token 增加关联用户信息
+		uuidoAuth2AccessTokenGenerator.setAccessTokenCustomizer(new CustomOAuth2TokenCustomizer());
 		UUIDOAuth2RefreshTokenGenerator uuidoAuth2RefreshTokenGenerator = new UUIDOAuth2RefreshTokenGenerator();
 		return new DelegatingOAuth2TokenGenerator(uuidoAuth2AccessTokenGenerator, uuidoAuth2RefreshTokenGenerator);
 	}
 
     /**
 	 * 自定义生成id_token的规则
-     *
-     * @return
-     */
+	 *
+	 * @return
+	 */
     @Bean
     public OAuth2TokenCustomizer<JwtEncodingContext> idTokenCustomizer() {
         return new FederatedIdentityIdTokenCustomizer();

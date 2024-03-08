@@ -15,8 +15,15 @@
  */
 package com.crane.soft.auth.server.controller;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
+import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
+import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 /**
  * @author Steve Riesenberg
@@ -25,9 +32,20 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class LoginController {
 
+    @Autowired
+    private OAuth2AuthorizationService authorizationService;
+
     @GetMapping("/login")
     public String login() {
         return "login";
+    }
+
+    @GetMapping("/token/getTokenInfo/{token}")
+    @ResponseBody
+    public Object getTokenInfo(@PathVariable("token") String token) {
+        OAuth2Authorization oAuth2Authorization = authorizationService.findByToken(token, OAuth2TokenType.ACCESS_TOKEN);
+        OAuth2Authorization.Token<OAuth2AccessToken> accessToken = oAuth2Authorization.getAccessToken();
+        return accessToken.getClaims();
     }
 
 }

@@ -53,7 +53,7 @@ public class DefaultSecurityConfig {
 		http
 			.authorizeHttpRequests(authorize ->
 				authorize
-					.requestMatchers("/assets/**", "/login").permitAll() // 不需要认证的URL
+					.requestMatchers("/assets/**", "/login","/token/**").permitAll() // 不需要认证的URL
 					.anyRequest().authenticated()
 			)
 			.formLogin(formLogin ->
