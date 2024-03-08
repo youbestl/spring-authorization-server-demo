@@ -55,7 +55,7 @@ public class DmRedisOAuth2AuthorizationService implements OAuth2AuthorizationSer
         }
 
         if (isContainRefreshToken(authorization)) {
-            OAuth2RefreshToken refreshToken = authorization.getRefreshToken().getToken();
+            OAuth2RefreshToken refreshToken = authorization.getToken(CustomRefreshToken.class).getToken();
             long between = ChronoUnit.SECONDS.between(refreshToken.getIssuedAt(), refreshToken.getExpiresAt());
             redisTemplate.opsForValue()
                     .set(generateKey(OAuth2ParameterNames.REFRESH_TOKEN, refreshToken.getTokenValue()), authorization, between,
@@ -146,7 +146,7 @@ public class DmRedisOAuth2AuthorizationService implements OAuth2AuthorizationSer
     }
 
     private boolean isContainRefreshToken(OAuth2Authorization authorization) {
-        return Objects.nonNull(authorization.getRefreshToken());
+        return Objects.nonNull(authorization.getToken(CustomRefreshToken.class));
     }
 
     private boolean isContainAccessToken(OAuth2Authorization authorization) {

@@ -13,6 +13,10 @@ spring:
   security:
     oauth2:
       resourceserver:
-        jwt:
-          issuer-uri: http://localhost:9000
+        opaquetoken:
+          client-id: messaging-sms-client
+          client-secret: secret3
+          introspection-uri: http://localhost:9000/oauth2/introspect
+#        jwt:
+#          issuer-uri: http://localhost:9000
 

@@ -92,6 +92,7 @@ public class DefaultSecurityConfig {
 				.username("13800000000")
 				.password(bCryptPasswordEncoder.encode("123456"))
 				.roles("USER")
+				.authorities("message.read")
 				.build();
 		return new InMemoryUserDetailsManager(user,smsUser);
 	}

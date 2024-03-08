@@ -3,6 +3,7 @@ package com.crane.soft.auth.server.support.sms;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.map.MapUtil;
 import com.crane.soft.auth.server.constants.OAuth2Constants;
+import com.crane.soft.auth.server.support.CustomRefreshToken;
 import com.crane.soft.auth.server.support.OAuth2Utils;
 import jakarta.annotation.Resource;
 import org.apache.commons.logging.Log;
@@ -127,7 +128,8 @@ public class SmsGrantAuthenticationProvider implements AuthenticationProvider {
         }
 
         // ----- Refresh token -----
-        OAuth2RefreshToken refreshToken = null;
+        // OAuth2RefreshToken refreshToken = null;
+        CustomRefreshToken refreshToken = null;
         if (registeredClient.getAuthorizationGrantTypes().contains(AuthorizationGrantType.REFRESH_TOKEN)) {
             tokenContext = tokenContextBuilder.tokenType(OAuth2TokenType.REFRESH_TOKEN).build();
             OAuth2Token generatedRefreshToken = this.tokenGenerator.generate(tokenContext);
@@ -142,7 +144,7 @@ public class SmsGrantAuthenticationProvider implements AuthenticationProvider {
                     this.logger.trace("Generated refresh token");
                 }
 
-                refreshToken = (OAuth2RefreshToken) generatedRefreshToken;
+                refreshToken = (CustomRefreshToken) generatedRefreshToken;
                 authorizationBuilder.refreshToken(refreshToken);
             }
         }
